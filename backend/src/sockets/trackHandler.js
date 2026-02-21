@@ -1,33 +1,40 @@
-const busController = require("../controllers/busController");
-const { calculateETA } = require("../services/etaService");
+const Bus = require("../models/Bus");
 
-const GOKARNA_COORDS = { lat: 14.5428, lng: 74.3183 };
+module.exports = (io) => {
+  io.on("connection", (socket) => {
+    console.log(`🔌 New User Connected: ${socket.id}`);
 
-module.exports = (io, socket) => {
-  socket.on("updateLocation", async (data) => {
-    console.log(`📍 Ping from ${data.busId}`);
+    // Listen for GPS updates from the "Driver" (Your phone)
+    socket.on("updateLocation", async (data) => {
+      try {
+        // 🏎️ We are now extracting 'speed' from the data payload
+        const { busId, location, speed } = data;
 
-    // 1. Calculate ETA
-    const minutesLeft = calculateETA(data.location, GOKARNA_COORDS);
+        // 1. Update the Database
+        const updatedBus = await Bus.findOneAndUpdate(
+          { busNumber: busId },
+          {
+            location: location,
+            speed: speed, // Save the speed!
+            lastUpdated: Date.now(),
+          },
+          { new: true },
+        );
 
-    // 2. Prepare the data for the Frontend
-    // CRITICAL FIX: We map 'busId' to 'busNumber' so the frontend recognizes it
-    const enrichedData = {
-      busNumber: data.busId, // <--- This fixes the mismatch
-      location: data.location,
-      nextStop: "Gokarna Stand",
-      eta: minutesLeft,
-      lastUpdated: new Date(),
-    };
+        if (updatedBus) {
+          // 2. Broadcast the new location AND speed to everyone else looking at the map
+          io.emit(`bus_${busId}`, updatedBus);
 
-    // 3. Save to DB
-    await busController.updateBusLocation(
-      data.busId,
-      data.location.lat,
-      data.location.lng,
-    );
+          // Secretly log it so you can verify it's working on your laptop terminal
+          console.log(`🚀 Bus ${busId} moved! Speed: ${speed} km/h`);
+        }
+      } catch (error) {
+        console.error("Error updating location:", error);
+      }
+    });
 
-    // 4. Broadcast
-    io.emit(`bus_${data.busId}`, enrichedData);
+    socket.on("disconnect", () => {
+      console.log(`❌ User Disconnected: ${socket.id}`);
+    });
   });
 };

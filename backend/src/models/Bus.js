@@ -3,25 +3,21 @@ const mongoose = require("mongoose");
 const busSchema = new mongoose.Schema({
   busNumber: { type: String, required: true, unique: true },
   route: { type: String, required: true },
-  type: {
-    type: String,
-    enum: ["Express", "Shuttle", "Ordinary"],
-    default: "Ordinary",
-  },
+  type: { type: String, default: "Express" },
 
-  // Real-time Position
+  // Current Live Location
   location: {
-    lat: { type: Number },
-    lng: { type: Number },
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true },
   },
 
-  // The AI/ETA Data
-  nextStop: { type: String }, // e.g., "Gokarna Cross"
-  eta: { type: Number }, // Minutes remaining to next stop
-  speed: { type: Number }, // Current speed in km/h
+  // 🏎️ NEW: Store the live speed of the bus
+  speed: { type: Number, default: 0 },
 
-  lastUpdated: { type: Date, default: Date.now },
   activeUsers: { type: Number, default: 0 },
+  eta: { type: Number, default: null },
+  nextStop: { type: String, default: "Unknown" },
+  lastUpdated: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Bus", busSchema);
