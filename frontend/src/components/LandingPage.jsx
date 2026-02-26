@@ -60,21 +60,21 @@ const FEATURES = [
 /* ─── Framer Motion Variants ────────────────────────────── */
 const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.12, delayChildren: 1.2 } },
+  visible: { transition: { staggerChildren: 0.15, delayChildren: 0.15 } },
 };
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 34, scale: 0.96 },
+  hidden: { opacity: 0, y: 30, scale: 0.97 },
   visible: (i) => ({
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { delay: i * 0.13 + 1.5, duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: i * 0.12 + 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] },
   }),
 };
 
@@ -230,12 +230,8 @@ const LandingPage = ({ onEnter }) => {
           <div className="logo-icon">
             <Bus size={18} color="white" strokeWidth={2.5} />
           </div>
-          <span className="logo-text">Bus Pass</span>
+          <span className="logo-text">Real-Time Bus Tracker</span>
         </div>
-        <span className="live-badge">
-          <span className="live-dot" />
-          Live Network
-        </span>
       </motion.header>
 
       {/* ── 3-D BUS STAGE ── */}
@@ -276,6 +272,7 @@ const LandingPage = ({ onEnter }) => {
             Live GPS positions, instant ETA estimates, and Kumta–Gokarna
             coverage — all in one tap.
           </motion.p>
+
 
           {/* CTA */}
           <motion.div variants={fadeUp}>
@@ -395,7 +392,7 @@ const LandingPage = ({ onEnter }) => {
         <button onClick={onEnter} className="footer-link">
           Open Live Map <ChevronRight size={15} />
         </button>
-        <p className="footer-copy">© 2026 Bus Pass · Kumta–Gokarna Region</p>
+        <p className="footer-copy">© 2026 Real-Time Bus Tracker · Kumta–Gokarna Region</p>
       </div>
     </div>
   );

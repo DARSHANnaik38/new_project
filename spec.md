@@ -1,7 +1,7 @@
 # Bus Pass — Project Specification (Blueprint)
 
-> **Last Audited:** 2026-02-25  
-> **Status:** Phase 2 — Frontend Map Restoration (In Progress)  
+> **Last Audited:** 2026-02-26  
+> **Status:** Phase 3 — Backend & Socket Reconnection (In Progress)  
 > **GSD Layer:** Layer-by-Layer, strictly sequential
 
 ---
@@ -30,6 +30,7 @@ Passengers and drivers act as GPS beacons. When a driver (or any rider) boards a
 | **Database** | MongoDB Atlas + Mongoose | 9.x | ✅ Configured |
 | **AI / Routing Engine** | OSRM (planned) | — | ❌ Not started |
 | **CSS Utility** | TailwindCSS v4 (via Vite plugin) | 4.x | ✅ Installed |
+| **Monospace Font** | IBM Plex Mono (Google Fonts) | — | ✅ Global (`*, body` in `index.css`) |
 
 > **Note:** The original Leaflet map has been fully replaced by `react-map-gl/maplibre`. Do NOT reintroduce Leaflet.
 
@@ -87,11 +88,16 @@ Passengers and drivers act as GPS beacons. When a driver (or any rider) boards a
 src/
 ├── App.jsx               — Two-view router: 'landing' | 'map' (AnimatePresence)
 ├── main.jsx              — React root mount
-├── index.css             — Global styles (glassmorphism, bus animations, orbs)
+├── index.css             — Global styles (glassmorphism, bus animations, orbs,
+│                           IBM Plex Mono import, slideUpFade keyframe)
 ├── App.css               — App-level resets
 └── components/
-    ├── LandingPage.jsx   — ✅ COMPLETE: 3D SVG bus, animated hero, bus status cards,
-    │                         feature strip, footer (Framer Motion + Lucide)
+    ├── LandingPage.jsx   — ✅ UPDATED: citizen-friendly branding ("Real-Time Bus Tracker"),
+    │                         global IBM Plex Mono, removed CliPill & "Live Network" badge,
+    │                         Framer Motion staggered slide-up on hero + status cards.
+    ├── CliPill.jsx       — ✅ NEW: CodeRabbit-style terminal pill (IBM Plex Mono,
+    │                         CSS slideUpFade, #F04006 orange highlight, hover glow
+    │                         + arrow shift — NO Framer Motion)
     └── BusMap.jsx        — ✅ FIXED: react-map-gl/maplibre, CartoDB tiles, pitch 60°,
                               Socket.io listeners de-duped, selectedBus popup pattern,
                               env-var backend URL, Ngrok bypass header.
@@ -131,8 +137,8 @@ Simulate.js               — GPS movement simulator script
 |---|---|---|---|
 | 1 | ✅ Fixed | `BusMap.jsx` | Backend IP was hardcoded — now uses `VITE_BACKEND_URL` env var with `localhost:5000` fallback. |
 | 2 | ✅ Fixed | `vite.config.js` | Build was failing — `react-map-gl/maplibre` aliased to `dist/maplibre.js` via `resolve.alias`. |
-| 3 | 🟠 High | `trackHandler.js` L3–39 | Double `io.on('connection')` registration — duplicate logging + potential memory leak. (Phase 3) |
-| 4 | 🟡 Medium | `BusMap.jsx` | Speed gatekeeper `< 10 km/h` silently drops slow/stationary buses — review in Phase 3. |
+| 3 | ✅ Fixed | `trackHandler.js` | Double `io.on('connection')` registration — refactored to export `(io, socket) => {}`. Single listener in `app.js`. |
+| 4 | ✅ Fixed | `BusMap.jsx` | Speed gatekeeper threshold lowered from `< 10 km/h` to `< 2 km/h` — slow coastal traffic now broadcasts; only parked GPS drift is filtered. |
 | 5 | ✅ Fixed | `BusMap.jsx` | Per-bus socket listeners stacked on re-fetch — now registered once post-fetch with cleanup. |
 | 6 | 🟡 Medium | `backend/src/services/` | Empty — OSRM/ETA service layer not implemented (Phase 4). |
 | 7 | 🟢 Low | `ai-engine/` | Completely empty — placeholder only (Phase 4). |
