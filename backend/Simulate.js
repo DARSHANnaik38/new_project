@@ -18,12 +18,17 @@ socket.on("connect", () => {
     lat += 0.001;
     lng -= 0.0005;
 
+    // Simulate a realistic coastal-bus speed: 30–44 km/h
+    const speed = Math.floor(Math.random() * 15) + 30;
+
     const payload = {
       busId: BUS_ID,
       location: { lat, lng },
+      speed,
+      nextStop: "Kumta Stand",
     };
 
-    console.log(`📍 Ping: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    console.log(`📍 Ping: ${lat.toFixed(4)}, ${lng.toFixed(4)} | Speed: ${speed} km/h`);
 
     // Emit the event exactly like the frontend expects
     socket.emit("updateLocation", payload);
