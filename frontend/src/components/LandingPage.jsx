@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Bus, MapPin, Clock, ChevronRight, Wifi, Zap, Navigation } from "lucide-react";
 
@@ -78,126 +78,155 @@ const cardVariants = {
   }),
 };
 
-/* ─── 3-D SVG Bus ────────────────────────────────────────── */
+/* ─── Ultra-Realistic Modern Coach SVG ──────────────────── */
 const Bus3D = () => (
   <svg
-    viewBox="0 0 320 130"
+    viewBox="0 0 360 150"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
-    style={{ width: "100%", maxWidth: 340, filter: "drop-shadow(0 20px 40px rgba(14,165,233,0.35))" }}
+    style={{ width: "100%", maxWidth: 380, filter: "drop-shadow(0 20px 50px rgba(14,165,233,0.4))" }}
   >
-    {/* Body shadow/depth (3-D bottom face) */}
-    <ellipse cx="160" cy="122" rx="130" ry="10" fill="rgba(0,0,0,0.35)" />
-
-    {/* Bus body */}
-    <rect x="18" y="28" width="284" height="82" rx="14" fill="url(#bodyGrad)" />
-
-    {/* Roof accent stripe */}
-    <rect x="18" y="28" width="284" height="18" rx="14" fill="url(#roofGrad)" />
-    <rect x="18" y="36" width="284" height="10" fill="url(#roofGrad)" />
-
-    {/* Front face highlight */}
-    <rect x="286" y="32" width="16" height="74" rx="6" fill="url(#frontFace)" />
-
-    {/* Windows row */}
-    {[36, 92, 148, 204].map((x) => (
-      <rect key={x} x={x} y="52" width="46" height="30" rx="6" fill="url(#windowGrad)" opacity="0.92" />
-    ))}
-
-    {/* Window reflection glare */}
-    {[36, 92, 148, 204].map((x) => (
-      <rect key={x + "g"} x={x + 2} y="53" width="14" height="8" rx="3" fill="white" opacity="0.18" />
-    ))}
-
-    {/* Door */}
-    <rect x="254" y="52" width="30" height="52" rx="6" fill="url(#doorGrad)" />
-    <line x1="269" y1="52" x2="269" y2="104" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
-
-    {/* Bumper / lower skirt */}
-    <rect x="22" y="100" width="276" height="8" rx="4" fill="#0c1a3b" />
-
-    {/* Front grill */}
-    <rect x="290" y="72" width="12" height="24" rx="3" fill="#0c1a3b" />
-    {[76, 82, 88, 92].map((y) => (
-      <line key={y} x1="290" y1={y} x2="302" y2={y} stroke="rgba(14,165,233,0.5)" strokeWidth="1" />
-    ))}
-
-    {/* Headlights */}
-    <rect x="292" y="42" width="18" height="10" rx="4" fill="url(#headlightGrad)" />
-    <rect x="292" y="56" width="18" height="8" rx="3" fill="url(#headlightGrad)" opacity="0.7" />
-
-    {/* Tail lights */}
-    <rect x="10" y="46" width="10" height="14" rx="4" fill="#ef4444" opacity="0.9" />
-    <rect x="10" y="64" width="10" height="10" rx="3" fill="#f97316" opacity="0.8" />
-
-    {/* Route destination board */}
-    <rect x="60" y="33" width="130" height="12" rx="3" fill="#0a2257" />
-    <text x="125" y="43" textAnchor="middle" fill="#38bdf8" fontSize="7" fontFamily="Inter,sans-serif" fontWeight="700" letterSpacing="0.8">KUMTA → GOKARNA</text>
-
-    {/* Wheels */}
-    <g className="wheel">
-      <circle cx="68" cy="115" r="16" fill="#111827" stroke="#1e40af" strokeWidth="3" />
-      <circle cx="68" cy="115" r="8" fill="#1e3a8a" />
-      <circle cx="68" cy="115" r="3" fill="#38bdf8" />
-      {/* Spokes */}
-      {[0, 60, 120, 180, 240, 300].map((deg) => (
-        <line
-          key={deg}
-          x1={68 + 3.5 * Math.cos((deg * Math.PI) / 180)}
-          y1={115 + 3.5 * Math.sin((deg * Math.PI) / 180)}
-          x2={68 + 10 * Math.cos((deg * Math.PI) / 180)}
-          y2={115 + 10 * Math.sin((deg * Math.PI) / 180)}
-          stroke="#38bdf8"
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-      ))}
-    </g>
-    <g className="wheel">
-      <circle cx="252" cy="115" r="16" fill="#111827" stroke="#1e40af" strokeWidth="3" />
-      <circle cx="252" cy="115" r="8" fill="#1e3a8a" />
-      <circle cx="252" cy="115" r="3" fill="#38bdf8" />
-      {[0, 60, 120, 180, 240, 300].map((deg) => (
-        <line
-          key={deg}
-          x1={252 + 3.5 * Math.cos((deg * Math.PI) / 180)}
-          y1={115 + 3.5 * Math.sin((deg * Math.PI) / 180)}
-          x2={252 + 10 * Math.cos((deg * Math.PI) / 180)}
-          y2={115 + 10 * Math.sin((deg * Math.PI) / 180)}
-          stroke="#38bdf8"
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-      ))}
-    </g>
-
-    {/* SVG Gradients */}
     <defs>
-      <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="coachBody" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="#1e40af" />
-        <stop offset="100%" stopColor="#0d2a72" />
+        <stop offset="60%" stopColor="#0d2a72" />
+        <stop offset="100%" stopColor="#091a4a" />
       </linearGradient>
-      <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="coachRoof" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="#38bdf8" />
-        <stop offset="100%" stopColor="#1d4ed8" />
-      </linearGradient>
-      <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#1e40af" />
-        <stop offset="100%" stopColor="#0f172a" />
-      </linearGradient>
-      <linearGradient id="windowGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.5" />
-        <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.2" />
-      </linearGradient>
-      <linearGradient id="doorGrad" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#1d4ed8" />
         <stop offset="100%" stopColor="#1e40af" />
       </linearGradient>
-      <linearGradient id="headlightGrad" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#fef08a" />
+      <linearGradient id="windshield" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.55" />
+        <stop offset="100%" stopColor="#0284c7" stopOpacity="0.25" />
+      </linearGradient>
+      <linearGradient id="window" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#93c5fd" stopOpacity="0.45" />
+        <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.15" />
+      </linearGradient>
+      <linearGradient id="frontFace" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#1e3a8a" />
+        <stop offset="100%" stopColor="#0f172a" />
+      </linearGradient>
+      <linearGradient id="doorGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#1e40af" />
+        <stop offset="100%" stopColor="#1d4ed8" />
+      </linearGradient>
+      <linearGradient id="headlight" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#fef9c3" />
         <stop offset="100%" stopColor="#fde047" />
       </linearGradient>
+      <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#94a3b8" />
+        <stop offset="100%" stopColor="#475569" />
+      </linearGradient>
+      <filter id="headGlow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="2.5" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
     </defs>
+
+    {/* Ground shadow */}
+    <ellipse cx="178" cy="143" rx="148" ry="8" fill="rgba(0,0,0,0.3)" />
+
+    {/* ── Main body ── */}
+    <path d="M30,38 Q28,38 26,42 L20,58 L20,112 Q20,118 26,118 L332,118 Q342,118 344,108 L344,55 Q344,44 334,40 L200,38 Q120,34 30,38 Z"
+      fill="url(#coachBody)" />
+
+    {/* Roof with aerodynamic slope */}
+    <path d="M30,38 Q120,32 200,36 L334,40 Q342,38 342,34 L330,30 Q220,24 120,26 L34,30 Q28,30 30,38 Z"
+      fill="url(#coachRoof)" />
+
+    {/* ── Roof-mounted AC unit ── */}
+    <rect x="90" y="22" width="140" height="8" rx="3" fill="#1e3a8a" />
+    <rect x="95" y="20" width="130" height="4" rx="2" fill="#334155" />
+    {[100,120,140,160,180,200].map(x => (
+      <line key={x} x1={x} y1="20" x2={x} y2="24" stroke="#38bdf8" strokeWidth="1" opacity="0.5" />
+    ))}
+
+    {/* ── Aerodynamic front face ── */}
+    <path d="M334,40 Q348,44 350,58 L350,105 Q350,118 338,118 L330,118 L330,40 Z"
+      fill="url(#frontFace)" />
+
+    {/* Curved windshield */}
+    <path d="M306,42 Q340,44 344,56 L344,82 L306,82 Q300,82 298,76 L298,48 Q298,42 306,42 Z"
+      fill="url(#windshield)" />
+    {/* Windshield reflection */}
+    <path d="M308,44 L336,46 L334,54 L308,52 Z" fill="white" opacity="0.12" />
+
+    {/* ── Rear-view mirrors ── */}
+    <rect x="348" y="52" width="10" height="5" rx="2" fill="#1e3a8a" stroke="#38bdf8" strokeWidth="0.5" />
+    <rect x="352" y="48" width="2" height="6" rx="1" fill="#475569" />
+    <rect x="348" y="66" width="10" height="4" rx="2" fill="#1e3a8a" stroke="#38bdf8" strokeWidth="0.5" />
+    <rect x="352" y="62" width="2" height="6" rx="1" fill="#475569" />
+
+    {/* ── Passenger windows ── */}
+    {[36, 88, 140, 192, 244].map(x => (
+      <g key={x}>
+        <rect x={x} y="50" width="44" height="34" rx="5" fill="url(#window)" />
+        {/* glare streak */}
+        <rect x={x + 2} y="52" width="12" height="6" rx="2" fill="white" opacity="0.15" />
+      </g>
+    ))}
+
+    {/* ── Door (second last bay) ── */}
+    <rect x="244" y="62" width="32" height="54" rx="4" fill="url(#doorGrad)" />
+    <line x1="260" y1="62" x2="260" y2="116" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+    <circle cx="262" cy="90" r="2.5" fill="#38bdf8" opacity="0.8" />
+
+    {/* ── Body side stripe ── */}
+    <rect x="20" y="94" width="314" height="5" rx="2" fill="#38bdf8" opacity="0.25" />
+
+    {/* ── Lower skirt / bumper ── */}
+    <rect x="24" y="112" width="310" height="7" rx="3" fill="#0c1a3b" />
+    <rect x="335" y="108" width="16" height="10" rx="3" fill="#0c1a3b" />
+
+    {/* Front grill slats */}
+    {[64,70,76,82,88].map(y => (
+      <line key={y} x1="340" y1={y} x2="354" y2={y} stroke="rgba(56,189,248,0.4)" strokeWidth="1.2" />
+    ))}
+
+    {/* ── Headlights (glowing) ── */}
+    <rect x="340" y="44" width="16" height="10" rx="4" fill="url(#headlight)" filter="url(#headGlow)" />
+    <rect x="340" y="58" width="16" height="7" rx="3" fill="url(#headlight)" opacity="0.65" filter="url(#headGlow)" />
+    {/* DRL strip */}
+    <rect x="332" y="55" width="8" height="2" rx="1" fill="#fef9c3" opacity="0.8" />
+
+    {/* ── Tail lights ── */}
+    <rect x="12" y="44" width="10" height="16" rx="4" fill="#ef4444" opacity="0.95" />
+    <rect x="12" y="64" width="10" height="10" rx="3" fill="#f97316" opacity="0.85" />
+    {/* Brake light strip */}
+    <rect x="20" y="47" width="6" height="3" rx="1" fill="#fca5a5" opacity="0.7" />
+
+    {/* ── Destination board ── */}
+    <rect x="60" y="32" width="150" height="12" rx="3" fill="#0a1f5c" />
+    <text x="135" y="41" textAnchor="middle" fill="#38bdf8" fontSize="7" fontFamily="Inter,sans-serif"
+      fontWeight="700" letterSpacing="1">KUMTA → GOKARNA</text>
+
+    {/* ── Wheels — metallic spoke rims ── */}
+    {[70, 268].map(cx => (
+      <g key={cx} className="wheel">
+        {/* Tyre */}
+        <circle cx={cx} cy="132" r="18" fill="#111827" stroke="#1e3a8a" strokeWidth="3" />
+        {/* Rim */}
+        <circle cx={cx} cy="132" r="12" fill="url(#rimGrad)" />
+        {/* Centre hub */}
+        <circle cx={cx} cy="132" r="4" fill="#334155" />
+        <circle cx={cx} cy="132" r="2" fill="#94a3b8" />
+        {/* 6 spokes */}
+        {[0,60,120,180,240,300].map(deg => (
+          <line
+            key={deg}
+            x1={cx + 4 * Math.cos((deg * Math.PI) / 180)}
+            y1={132 + 4 * Math.sin((deg * Math.PI) / 180)}
+            x2={cx + 11 * Math.cos((deg * Math.PI) / 180)}
+            y2={132 + 11 * Math.sin((deg * Math.PI) / 180)}
+            stroke="#64748b"
+            strokeWidth="2"
+          />
+        ))}
+      </g>
+    ))}
   </svg>
 );
 
@@ -210,11 +239,16 @@ const RoadDashes = () => (
 
 /* ─── Main Component ─────────────────────────────────────── */
 const LandingPage = ({ onEnter }) => {
-  return (
-    <div className="landing-root">
-      {/* Animated gradient background */}
-      <div className="bg-gradient-anim" aria-hidden="true" />
+  // P4.1 — Auto-redirect after 2 seconds; "Get Started" is a manual fallback
+  useEffect(() => {
+    const timer = setTimeout(() => onEnter(), 4000);
+    return () => clearTimeout(timer); // cancel if user clicks manually first
+  }, [onEnter]);
 
+  return (
+    <div className="landing-root" style={{
+      background: "radial-gradient(circle at 50% -20%, #1e3a8a, #0f172a 50%, #020617 100%)",
+    }}>
       {/* Floating orbs */}
       <div className="orb orb-1" aria-hidden="true" />
       <div className="orb orb-2" aria-hidden="true" />
@@ -225,6 +259,7 @@ const LandingPage = ({ onEnter }) => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
+        style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", paddingTop: "2rem" }}
       >
         <div className="logo-mark">
           <div className="logo-icon">
@@ -255,16 +290,24 @@ const LandingPage = ({ onEnter }) => {
         animate="visible"
       >
         <div className="glass-card">
-          {/* Badge */}
-          <motion.span className="hero-badge" variants={fadeUp}>
-            <Wifi size={12} />
-            Powered by real-time Socket.io
-          </motion.span>
-
-          {/* Headline */}
-          <motion.h1 className="hero-h1" variants={fadeUp}>
+          {/* Headline — large gradient title */}
+          <motion.h1
+            className="hero-h1"
+            variants={fadeUp}
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3rem)",
+              fontWeight: 900,
+              background: "linear-gradient(135deg, #60a5fa, #c084fc)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+              textShadow: "none",
+              filter: "drop-shadow(0 10px 30px rgba(96, 165, 250, 0.3))",
+              marginBottom: "0.5rem",
+            }}
+          >
             Track Your Ride{" "}
-            <span className="gradient-text">in Real-Time</span>
+            <span style={{ display: "block" }}>in Real-Time</span>
           </motion.h1>
 
           {/* Sub-headline */}
@@ -274,22 +317,6 @@ const LandingPage = ({ onEnter }) => {
           </motion.p>
 
 
-          {/* CTA */}
-          <motion.div variants={fadeUp}>
-            <motion.button
-              id="get-started-btn"
-              onClick={onEnter}
-              className="cta-btn"
-              whileHover={{ scale: 1.06, boxShadow: "0 0 40px rgba(14,165,233,0.55)" }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            >
-              <Zap size={20} strokeWidth={2.5} />
-              Get Started
-              <ChevronRight size={18} className="cta-arrow" />
-            </motion.button>
-            <p className="cta-footnote">No account needed · Works on any phone</p>
-          </motion.div>
         </div>
       </motion.div>
 

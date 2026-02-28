@@ -39,6 +39,58 @@ const buildingLayer = {
   },
 };
 
+// --- Predictive Proximity Engine: hub coordinates ---
+const HUB_COORDS = {
+  "Kumta":    { lat: 14.4231, lng: 74.4022 },
+  "Gokarna":  { lat: 14.5400, lng: 74.3180 },
+  "Honnavar": { lat: 14.2800, lng: 74.4400 },
+  "Sirsi":    { lat: 14.6195, lng: 74.8354 }, // inland hub for out-of-zone users
+};
+
+// Probable outgoing routes from each hub
+const OUTGOING_ROUTES = {
+  "Kumta":    ["🚌 Sirsi", "🚌 Karwar", "🚌 Honnavar", "🏖️ Gokarna"],
+  "Gokarna":  ["🚌 Kumta", "🚌 Ankola", "🚌 Karwar"],
+  "Honnavar": ["🚌 Kumta", "🚌 Bhatkal", "🏖️ Murdeshwar"],
+  "Sirsi":    ["🚌 Kumta", "🚌 Hubli", "🚌 Yellapur"],
+};
+
+/**
+ * getPredictiveRoutes — finds the nearest hub to the user's GPS using
+ * Euclidean distance (sufficient for small coastal lat/lng deltas) and
+ * returns its probable outgoing route chips.
+ */
+const getPredictiveRoutes = (userLoc) => {
+  if (!userLoc) return ["📍 Kumta", "🏖️ Gokarna", "🚌 Honnavar"]; // default before GPS
+
+  let nearestHub = "Kumta";
+  let minDistance = Infinity;
+
+  Object.keys(HUB_COORDS).forEach((hub) => {
+    const dist = Math.hypot(
+      HUB_COORDS[hub].lat - userLoc.lat,
+      HUB_COORDS[hub].lng - userLoc.lng,
+    );
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearestHub = hub;
+    }
+  });
+
+  return OUTGOING_ROUTES[nearestHub] || OUTGOING_ROUTES["Kumta"];
+};
+
+// --- P4 UX Polish: GPS modal animation keyframe ---
+const GPS_MODAL_STYLE = (
+  <style>{`
+    @keyframes slideBus {
+      0%   { transform: translateX(-25px); }
+      50%  { transform: translateX(25px); }
+      100% { transform: translateX(-25px); }
+    }
+  `}</style>
+);
+
 // --- MAIN COMPONENT ---
 const BusMap = () => {
   const [buses, setBuses] = useState([]);
@@ -46,6 +98,30 @@ const BusMap = () => {
   const [myBusId, setMyBusId] = useState(null);
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [selectedBus, setSelectedBus] = useState(null); // P2.7: click-to-popup
+
+  // P4.1 / P4.2 — GPS gate: map starts blurred, UI hidden until GPS resolves
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  // Hotfix: OS-level GPS block error state
+  const [gpsError, setGpsError] = useState(null);
+
+  // P4.4 — Search & Filter Engine
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Predictive Proximity Engine — recalculates nearest hub whenever userLocation updates
+  const suggestedRoutes = getPredictiveRoutes(userLocation);
+
+  // P4.4 — Derive filtered buses from live bus list
+  const filteredBuses = searchQuery.trim()
+    ? buses.filter((bus) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (bus.route && bus.route.toLowerCase().includes(q)) ||
+          (bus.busNumber && bus.busNumber.toLowerCase().includes(q)) ||
+          (bus.nextStop && bus.nextStop.toLowerCase().includes(q))
+        );
+      })
+    : buses;
 
   const [viewState, setViewState] = useState({
     longitude: 74.4022,
@@ -56,6 +132,44 @@ const BusMap = () => {
   });
 
   const watchIdRef = useRef(null);
+  // P4.2 — Imperative map handle for flyTo
+  const mapRef = useRef(null);
+
+  // P4.2 / Strict GPS Gate — reusable location requester (called on mount & Retry button)
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setIsMapReady(true); // Browser lacks geolocation — unblur immediately
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        setGpsError(null);
+        setUserLocation({ lat: userLat, lng: userLng });
+
+        // Smart Fly-To: snap to Kumta if user is outside the coastal tracking zone
+        // Check if user is North/South OR East/West of the Kumta-Gokarna coastal strip
+        const isOutsideZone = userLat > 15.0 || userLat < 14.0 || userLng > 74.6 || userLng < 74.2;
+        const targetCenter = isOutsideZone ? [74.4022, 14.4231] : [userLng, userLat];
+        const targetZoom   = isOutsideZone ? 11 : 14;
+
+        try {
+          mapRef.current?.flyTo({ center: targetCenter, zoom: targetZoom, duration: 800 });
+        } catch (flyErr) {
+          console.warn("flyTo out-of-bounds or map not ready:", flyErr);
+        }
+        // Reveal map + UI immediately — no stall on out-of-bounds users
+        setIsMapReady(true);
+      },
+      (err) => {
+        // GPS denied or OS-level disabled — keep map blurred, show modal
+        console.warn("Geolocation error:", err);
+        setGpsError("⚠️ Location Access Required");
+        // DO NOT call setIsMapReady(true) — map stays blurred until GPS granted
+      }
+    );
+  };
 
   // P2.4 FIX: useEffect fetches buses once, then sets up ONE socket listener
   // per bus using the returned bus list — not inside the async fetch callback.
@@ -102,17 +216,7 @@ const BusMap = () => {
 
     fetchAndSubscribe();
 
-    // Get initial user location (passive, not driving mode)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          setUserLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          }),
-        (err) => console.error("Geolocation error:", err)
-      );
-    }
+    requestLocation();
 
     // Cleanup: remove ALL socket listeners and GPS watch on unmount
     return () => {
@@ -169,35 +273,58 @@ const BusMap = () => {
 
   return (
     <div style={{ position: "relative", height: "100vh", width: "100vw", overflow: "hidden" }}>
+      {/* Inject slideBus keyframe animation */}
+      {GPS_MODAL_STYLE}
 
-      {/* ✨ FLOATING GLASS SEARCH BAR */}
+      {/* ✨ FLOATING GLASS SEARCH BAR — fades in after GPS resolves (P4.2) */}
       <div
         style={{
           position: "absolute", top: "20px", left: "5%", right: "5%",
-          zIndex: 1000, background: "rgba(255,255,255,0.9)",
-          backdropFilter: "blur(10px)", padding: "12px 20px",
-          borderRadius: "30px", boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+          zIndex: 1000,
+          background: "rgba(255, 255, 255, 0.05)",
+          backgroundColor: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
+          border: "1px solid rgba(255, 255, 255, 0.4)",
+          boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
+          padding: "12px 20px",
+          borderRadius: "30px",
           display: "flex", alignItems: "center", gap: "10px",
-          border: "1px solid rgba(255,255,255,0.5)",
+          // GPS gate: hidden until map is ready
+          opacity: isMapReady ? 1 : 0,
+          pointerEvents: isMapReady ? "auto" : "none",
+          transition: "opacity 1.2s ease-in-out",
         }}
       >
         <span style={{ fontSize: "20px" }}>🔍</span>
         <input
           type="text"
           placeholder="Where are you going?"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur(); // dismiss mobile keyboard
+            }
+          }}
           style={{
-            border: "none", outline: "none", background: "transparent",
+            border: "none", outline: "none",
+            backgroundColor: "transparent", background: "transparent",
             width: "100%", fontSize: "16px", fontWeight: "500", color: "#333",
           }}
         />
-        <div
-          style={{
-            background: "#2563eb", color: "white", padding: "8px 15px",
-            borderRadius: "20px", fontSize: "12px", fontWeight: "bold", cursor: "pointer",
-          }}
-        >
-          Find Bus
-        </div>
+        {searchQuery && (
+          <div
+            onClick={() => setSearchQuery("")}
+            style={{
+              background: "#ef4444", color: "white", padding: "8px 15px",
+              borderRadius: "20px", fontSize: "12px", fontWeight: "bold",
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            ✖ Clear
+          </div>
+        )}
       </div>
 
       {/* 🏎️ SPEEDOMETER (only shown in driver mode) */}
@@ -222,13 +349,23 @@ const BusMap = () => {
         </div>
       )}
 
-      {/* 🗺️ THE 3D MAP */}
+      {/* 🗺️ THE 3D MAP — wrapped in blur container (P4.1 / P4.2) */}
+      <div
+        style={{
+          width: "100%", height: "100%",
+          filter: isMapReady ? "none" : "blur(10px)",
+          transition: "filter 1.5s ease-in-out",
+        }}
+      >
       <Map
+        ref={mapRef}
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         style={{ width: "100%", height: "100%" }}
         mapStyle={MAP_STYLE}
         maxPitch={85}
+        maxBounds={[ [74.0, 11.5], [78.6, 18.5] ]}
+        minZoom={6}
         onClick={() => setSelectedBus(null)} // click map background = close popup
       >
         {/* 3D buildings layer */}
@@ -247,8 +384,8 @@ const BusMap = () => {
           </Marker>
         )}
 
-        {/* P2.6: Bus markers — click sets selectedBus */}
-        {buses.map((bus) => (
+        {/* P2.6 / P4.4: Bus markers — filtered by searchQuery */}
+        {filteredBuses.map((bus) => (
           <Marker
             key={bus._id}
             longitude={bus.location.lng}
@@ -279,32 +416,31 @@ const BusMap = () => {
           <Popup
             longitude={selectedBus.location.lng}
             latitude={selectedBus.location.lat}
-            anchor="bottom"
-            offset={myBusId === selectedBus.busNumber ? 35 : 30}
+            offset={[0, -10]}
             onClose={() => setSelectedBus(null)}
             closeOnClick={false}
             className="bus-popup-3d"
-            style={{ zIndex: 10, maxWidth: "220px" }}
+            style={{ zIndex: 10, maxWidth: "250px" }}
           >
-            <div style={{ textAlign: "center", minWidth: "180px", fontFamily: "system-ui" }}>
+            <div style={{ textAlign: "center", minWidth: "160px", maxWidth: "250px", padding: "10px", fontFamily: "system-ui" }}>
               {/* Header */}
               <div
                 style={{
                   background: myBusId === selectedBus.busNumber ? "#ef4444" : "#0ea5e9",
-                  color: "white", padding: "8px",
-                  borderRadius: "5px 5px 0 0", marginBottom: "8px",
+                  color: "white", padding: "6px 8px",
+                  borderRadius: "5px 5px 0 0", marginBottom: "6px",
                 }}
               >
-                <h3 style={{ margin: 0, fontSize: "16px" }}>{selectedBus.busNumber}</h3>
-                <small>{selectedBus.route}</small>
+                <h3 style={{ margin: 0, fontSize: "14px", lineHeight: 1.2 }}>{selectedBus.busNumber}</h3>
+                <small style={{ fontSize: "11px" }}>{selectedBus.route}</small>
               </div>
 
               {/* Speed stat */}
               <div
                 style={{
                   display: "flex", justifyContent: "space-between",
-                  background: "#f1f5f9", padding: "8px", borderRadius: "5px",
-                  marginBottom: "10px", fontSize: "12px", fontWeight: "bold", color: "#334155",
+                  background: "#f1f5f9", padding: "5px 8px", borderRadius: "5px",
+                  marginBottom: "6px", fontSize: "11px", fontWeight: "bold", color: "#334155",
                 }}
               >
                 <span>Live Speed:</span>
@@ -313,26 +449,23 @@ const BusMap = () => {
                 </span>
               </div>
 
-              {/* ETA row */}
-              {selectedBus.eta ? (
-                <div
-                  style={{
-                    background: "#f0fdf4", padding: "8px", borderRadius: "5px",
-                    border: "1px solid #86efac", marginBottom: "10px",
-                  }}
-                >
-                  <strong style={{ color: "#166534", fontSize: "15px" }}>
-                    ⏱️ {selectedBus.eta} min
-                  </strong>
-                  <div style={{ fontSize: "11px", color: "#666" }}>
-                    to {selectedBus.nextStop}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ fontSize: "12px", color: "#999", marginBottom: "10px" }}>
-                  Calculating route...
-                </div>
-              )}
+              {/* ETA row — shows bold green value when backend data arrives */}
+              <div
+                style={{
+                  background: "#f0fdf4", padding: "5px 8px", borderRadius: "5px",
+                  border: "1px solid #86efac", marginBottom: "6px",
+                  fontSize: "11px", color: "#666",
+                }}
+              >
+                ⏱️{" "}
+                {selectedBus.eta
+                  ? <span style={{ fontWeight: "bold", color: "#10b981", fontSize: "12px" }}>{selectedBus.eta} min</span>
+                  : "Calculating route..."
+                }
+                {selectedBus.eta && selectedBus.nextStop && (
+                  <div style={{ fontSize: "10px", marginTop: "2px" }}>to {selectedBus.nextStop}</div>
+                )}
+              </div>
 
               {/* Board / alight button */}
               <button
@@ -340,9 +473,10 @@ const BusMap = () => {
                 style={{
                   width: "100%",
                   background: myBusId === selectedBus.busNumber ? "#ef4444" : "#0f172a",
-                  color: "white", border: "none", padding: "10px",
+                  color: "white", border: "none", padding: "8px 0",
                   borderRadius: "5px", cursor: "pointer",
-                  fontWeight: "bold", fontSize: "13px", transition: "all 0.2s ease",
+                  fontWeight: "bold", fontSize: "12px",
+                  marginTop: "10px", transition: "all 0.2s ease",
                 }}
                 onMouseOver={(e) => (e.currentTarget.style.opacity = "0.85")}
                 onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
@@ -353,13 +487,68 @@ const BusMap = () => {
           </Popup>
         )}
       </Map>
+      </div> {/* end blur wrapper */}
 
-      {/* ✨ BOTTOM SHEET — Popular Routes */}
+      {/* Strict GPS Gate — centered modal, shown only while map is not ready AND there is an error */}
+      {!isMapReady && gpsError && (
+        <div
+          style={{
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 3000, background: "white",
+            padding: "25px", borderRadius: "15px",
+            textAlign: "center",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            width: "85%", maxWidth: "350px",
+          }}
+        >
+          <div style={{ animation: "slideBus 2.5s infinite ease-in-out", fontSize: "35px", marginBottom: "10px" }}>
+            🚌
+          </div>
+          <h2 style={{ margin: "0 0 8px 0", color: "#ef4444", fontSize: "20px" }}>
+            Location Access Required
+          </h2>
+          <p style={{ margin: "0 0 5px 0", color: "#475569", fontSize: "14px", lineHeight: "1.5" }}>
+            This app needs your GPS to find nearby buses and show live routes.
+          </p>
+          <p style={{ margin: "0", color: "#94a3b8", fontSize: "12px" }}>
+            Please enable Location Services on your device and tap Retry.
+          </p>
+          <button
+            onClick={() => requestLocation()}
+            style={{
+              background: "#ef4444", color: "white",
+              padding: "12px 20px", borderRadius: "10px",
+              border: "none", fontWeight: "bold",
+              fontSize: "16px", marginTop: "15px",
+              cursor: "pointer", width: "100%",
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = "#dc2626")}
+            onMouseOut={(e) => (e.currentTarget.style.background = "#ef4444")}
+          >
+            🔄 Retry Location
+          </button>
+          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "15px" }}>
+            Desktop user? If you enabled GPS in site settings, please reload the page.
+          </p>
+        </div>
+      )}
+
+      {/* ✨ BOTTOM SHEET — Popular Routes — fades in after GPS resolves (P4.2) */}
       <div
         style={{
           position: "absolute", bottom: "0", left: "0", right: "0", zIndex: 1000,
-          background: "white", padding: "20px", borderRadius: "25px 25px 0 0",
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.1)", transition: "transform 0.3s ease-out",
+          background: "rgba(255, 255, 255, 0.05)",
+          backgroundColor: "rgba(255, 255, 255, 0.05)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.5)",
+          boxShadow: "0 -8px 32px 0 rgba(31, 38, 135, 0.15)",
+          padding: "20px", borderRadius: "25px 25px 0 0",
+          transition: "transform 0.3s ease-out, opacity 1.2s ease-in-out",
+          // GPS gate: hidden until map is ready
+          opacity: isMapReady ? 1 : 0,
+          pointerEvents: isMapReady ? "auto" : "none",
         }}
       >
         <div
@@ -374,13 +563,17 @@ const BusMap = () => {
         </h3>
 
         <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "10px" }}>
-          {["📍 Kumta Stand", "🏖️ Gokarna Beach", "➕ More Stops"].map((label, i) => (
+          {suggestedRoutes.map((label, i) => (
             <button
               key={label}
+              onClick={() => setSearchQuery(label.substring(label.indexOf(" ") + 1))}
               style={{
                 flex: "0 0 auto",
-                background: i < 2 ? "#eff6ff" : "#f1f5f9",
-                border: i < 2 ? "1px solid #bfdbfe" : "1px solid #cbd5e1",
+                background: "rgba(255, 255, 255, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.6)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
                 color: i < 2 ? "#1d4ed8" : "#475569",
                 padding: "10px 15px", borderRadius: "15px",
                 fontWeight: "bold", display: "flex", alignItems: "center",

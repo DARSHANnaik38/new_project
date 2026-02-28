@@ -1,7 +1,7 @@
 # Bus Pass — Project Specification (Blueprint)
 
-> **Last Audited:** 2026-02-26  
-> **Status:** Phase 3 — Backend & Socket Reconnection (In Progress)  
+> **Last Audited:** 2026-02-27  
+> **Status:** Phase 4 — UX Polish & AI Routing Engine (In Progress)  
 > **GSD Layer:** Layer-by-Layer, strictly sequential
 
 ---
@@ -38,13 +38,18 @@ Passengers and drivers act as GPS beacons. When a driver (or any rider) boards a
 
 ## 3. Architecture
 
+> ⚠️ **GPS Permission Gate:** The map requires a GPS permission grant before rendering clearly and showing the Search UI. Until permission is granted (or while awaiting it), the `BusMap` container is rendered with a CSS blur filter applied. On successful geolocation, the blur is removed, `map.flyTo()` is triggered to the user's coordinates, and the Search Bar fades in.
+
+> 📍 **Smart Fly-To Geofence:** The map utilizes a Smart Fly-To geofence (Lat: 14.0–15.0, Lng: 74.2–74.6). Users detected outside this coastal bounding box are automatically snapped to the Kumta center to ensure buses remain visible.
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     USER'S BROWSER                      │
 │                                                         │
-│  LandingPage.jsx ──onEnter()──► BusMap.jsx              │
+│  LandingPage.jsx ──auto-redirect (2s)──► BusMap.jsx     │
 │  (Framer Motion, 3D SVG Bus,    (react-map-gl/maplibre  │
 │   Glassmorphism CTA)             CartoDB tiles, 3D bldg │
+│                                  GPS permission gate    │
 │                                  Socket.io client       │
 │                                  Speedometer UI)        │
 └────────────────────────▲────────────────────────────────┘
@@ -155,6 +160,8 @@ Simulate.js               — GPS movement simulator script
 └── view === 'map'      →  <BusMap />
 ```
 No client-side router (React Router) is used. View state is a simple `useState` toggle in `App.jsx`.
+
+> **Auto-Redirect (Phase 4):** `LandingPage` now auto-redirects to the map view after **2 seconds** — no manual "Get Started" click required. The `onEnter()` callback is triggered automatically via a `setTimeout` on mount.
 
 ---
 
