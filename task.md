@@ -35,8 +35,11 @@
 - [x] **P2.6 — Verify bus markers render** — Markers use SVG icons at `bus.location.lng/lat`; `onClick` sets `selectedBus` state
   - [x] **P2.6.2 — Fix Ngrok API interception** — Added `"ngrok-skip-browser-warning": "69420"` header to `axios.get`; added `Array.isArray()` safety guard before `setBuses()` to prevent "White Screen of Death"
 - [x] **P2.7 — Verify popups** — `Popup` renders only for `selectedBus`; shows busNumber, route, speed, ETA, "I'm on this Bus" button; closes on map-background click
-- [ ] **P2.8 — Verify speedometer UI** — When driver mode is active, speedometer widget appears top-right
-- [ ] **P2.9 — Verify landing → map transition** — AnimatePresence fade-in/out works correctly on "Get Started" click
+- [x] **P2.8 — Verify speedometer UI** — When driver mode is active, speedometer widget appears top-right
+- [x] **P2.9 — Verify landing → map transition** — AnimatePresence fade-in/out works correctly on "Get Started" click
+- [x] **Implement CodeRabbit-style CLI Pill** — `CliPill.jsx` created with IBM Plex Mono, slideUpFade CSS animation, #F04006 orange highlight, and hover glow + arrow shift
+- [x] **Overhaul landing page UI** — Citizen-friendly branding ("Real-Time Bus Tracker"), global IBM Plex Mono font via `*, body` selectors in `index.css`, removed "Live Network" badge and `CliPill`, Framer Motion staggered slide-up (`y: 30`, 0.15s stagger) on all hero blocks and status cards.
+- [x] **Hotfix: Unlock Landing Page scroll** — Removed `overflow: hidden` and `height: 100vh` from `body` in `index.css`; switched to `min-height: 100vh` + `overflow-x: hidden`. `BusMap.jsx` self-constrains via its own inline styles, so the map view is unaffected.
 
 ---
 
@@ -44,11 +47,11 @@
 
 > **Goal:** Bi-directional Socket.io is proven working end-to-end. Live location updates visible on map.
 
-- [ ] **P3.1 — Fix double-listener bug** — Refactor `trackHandler.js` to export `(io, socket) => {}` instead of registering its own `io.on('connection')`. `app.js` already handles connection; just call `trackHandler(io, socket)` inside it.
-- [ ] **P3.2 — Verify `seed.js` works** — Run seed script, confirm buses appear in MongoDB Atlas collection
-- [ ] **P3.3 — Run `Simulate.js`** — Confirm simulated GPS updates appear in server terminal and move bus markers on the live map
-- [ ] **P3.4 — Speed gatekeeper review** — Evaluate if the `< 10 km/h` filter in `BusMap.jsx` should be removed or made configurable (stationary buses should still be trackable)
-- [ ] **P3.5 — CORS hardening** — Lock CORS `origin` in `app.js` from `"*"` to the actual frontend URL for production
+- [x] **P3.1 — Fix double-listener bug** — Refactored `trackHandler.js` to export `(io, socket) => {}` directly. `app.js`'s single `io.on('connection')` block calls `trackHandler(io, socket)`. No duplicate listeners.
+- [x] **P3.2 — Verify `seed.js` works** — Run seed script, confirm buses appear in MongoDB Atlas collection
+- [x] **P3.3 — Run `Simulate.js`** — Confirm simulated GPS updates appear in server terminal and move bus markers on the live map
+- [x] **P3.4 — Speed gatekeeper review** — Lowered threshold to `2 km/h` (from 10) to support slow-moving coastal traffic; filters parked GPS drift while keeping slow buses broadcasting. Speedometer indicator updated to match.
+- [x] **P3.5 — CORS hardening** — `ALLOWED_ORIGINS` const built from `process.env.FRONTEND_URL` with `http://localhost:5173` fallback; applied to both Express `cors()` and Socket.io `Server()`. Wildcard `"*"` removed.
 - [ ] **P3.6 — End-to-end integration test** — Open two browser tabs: one as driver (boardBus), one as passenger. Confirm map updates in the passenger tab in real-time.
 
 ---

@@ -149,8 +149,8 @@ const BusMap = () => {
             const speedKmh = speed ? parseFloat((speed * 3.6).toFixed(1)) : 0;
             setCurrentSpeed(speedKmh);
 
-            // Speed gatekeeper: only broadcast if moving
-            if (speedKmh < 10) return;
+            // Speed gatekeeper: filter parked GPS drift, allow slow traffic
+            if (speedKmh < 2) return; // Allow slow traffic, but filter parked GPS drift
 
             setUserLocation({ lat: latitude, lng: longitude });
             socket.emit("updateLocation", {
@@ -207,14 +207,14 @@ const BusMap = () => {
             position: "absolute", top: "90px", right: "5%", zIndex: 1000,
             background: "white", padding: "10px 15px", borderRadius: "10px",
             boxShadow: "0 4px 10px rgba(0,0,0,0.2)", textAlign: "center",
-            borderTop: currentSpeed >= 10 ? "4px solid #10b981" : "4px solid #ef4444",
+            borderTop: currentSpeed >= 2 ? "4px solid #10b981" : "4px solid #ef4444",
           }}
         >
           <div style={{ fontSize: "10px", color: "#666", fontWeight: "bold" }}>YOUR SPEED</div>
           <div
             style={{
               fontSize: "22px", fontWeight: "900",
-              color: currentSpeed >= 10 ? "#10b981" : "#ef4444",
+              color: currentSpeed >= 2 ? "#10b981" : "#ef4444",
             }}
           >
             {currentSpeed} <span style={{ fontSize: "12px" }}>km/h</span>

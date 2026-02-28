@@ -13,8 +13,13 @@ const trackHandler = require("./sockets/trackHandler");
 const app = express();
 const server = http.createServer(app); // Create HTTP server for Socket.io
 
+// Trusted origins: localhost for dev, FRONTEND_URL env var for production/Ngrok
+const ALLOWED_ORIGINS = process.env.FRONTEND_URL
+  ? ["http://localhost:5173", process.env.FRONTEND_URL]
+  : "http://localhost:5173";
+
 // Middleware
-app.use(cors()); // Allow cross-origin requests (crucial for PWA)
+app.use(cors({ origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] })); // Lock origin — no more wildcard
 app.use(express.json()); // Parse JSON bodies
 
 // Routes
@@ -32,7 +37,7 @@ mongoose
 // Socket.io Setup (Real-time Engine)
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow connections from your React PWA
+    origin: ALLOWED_ORIGINS, // Mirrors the Express CORS config
     methods: ["GET", "POST"],
   },
 });
